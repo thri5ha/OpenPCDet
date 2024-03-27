@@ -76,7 +76,6 @@ def cfg_from_yaml_file(cfg_file, config):
             new_config = yaml.safe_load(f)
 
         merge_new_config(config=config, new_config=new_config)
-
     return config
 
 

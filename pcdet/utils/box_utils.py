@@ -4,7 +4,7 @@ import torch
 import copy
 from scipy.spatial import Delaunay
 
-from ..ops.roiaware_pool3d import roiaware_pool3d_utils
+# from ..ops.roiaware_pool3d import roiaware_pool3d_utils
 from . import common_utils
 
 
@@ -125,8 +125,8 @@ def remove_points_in_boxes3d(points, boxes3d):
     """
     boxes3d, is_numpy = common_utils.check_numpy_to_torch(boxes3d)
     points, is_numpy = common_utils.check_numpy_to_torch(points)
-    point_masks = roiaware_pool3d_utils.points_in_boxes_cpu(points[:, 0:3], boxes3d)
-    points = points[point_masks.sum(dim=0) == 0]
+    # point_masks = roiaware_pool3d_utils.points_in_boxes_cpu(points[:, 0:3], boxes3d)
+    # points = points[point_masks.sum(dim=0) == 0]
 
     return points.numpy() if is_numpy else points
 

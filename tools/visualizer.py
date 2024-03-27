@@ -1,6 +1,10 @@
 import argparse
 import glob
 from pathlib import Path
+import logging
+import pickle
+
+logger = logging.getLogger() 
 
 try:
     import open3d
@@ -13,11 +17,11 @@ except:
 
 import numpy as np
 import torch
-
+import sys
+sys.path.append("/home/mcw/Documents/MCW/OpenPCDet")
 from pcdet.config import cfg, cfg_from_yaml_file
-# from pcdet.datasets import DatasetTemplate
+from pcdet.datasets import DatasetTemplate
 # from pcdet.models import build_network, load_data_to_gpu
-# from pcdet.utils import common_utils
 
 
 class DemoDataset(DatasetTemplate):
@@ -62,50 +66,48 @@ class DemoDataset(DatasetTemplate):
 
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
-    parser.add_argument('--cfg_file', type=str, default='cfgs/kitti_models/second.yaml',
+    parser.add_argument('--cfg_file', type=str, default='/home/mcw/Documents/MCW/OpenPCDet/tools/cfgs/kitti_models/pointpillar.yaml',
                         help='specify the config for demo')
-    parser.add_argument('--data_path', type=str, default='demo_data',
+    parser.add_argument('--data_path', type=str, default='/home/mcw/Downloads/2011_09_26_drive_0002_sync/2011_09_26/2011_09_26_drive_0002_sync/velodyne_points/data/0000000000.bin',
                         help='specify the point cloud data file or directory')
-    parser.add_argument('--ckpt', type=str, default=None, help='specify the pretrained model')
     parser.add_argument('--ext', type=str, default='.bin', help='specify the extension of your point cloud data file')
+    parser.add_argument('--pickle', type=str, default='/home/mcw/Downloads/all_preds.pickle',
+                        help='pickle file to be visualised')
 
     args = parser.parse_args()
-
+    print(cfg.keys())
     cfg_from_yaml_file(args.cfg_file, cfg)
+    print(cfg.keys())
 
     return args, cfg
 
 
 def main():
     args, cfg = parse_config()
-    logger = common_utils.create_logger()
-    logger.info('-----------------Quick Demo of OpenPCDet-------------------------')
+    print('-----------------Quick Demo of OpenPCDet-------------------------')
     demo_dataset = DemoDataset(
         dataset_cfg=cfg.DATA_CONFIG, class_names=cfg.CLASS_NAMES, training=False,
         root_path=Path(args.data_path), ext=args.ext, logger=logger
     )
-    logger.info(f'Total number of samples: \t{len(demo_dataset)}')
+    print(f'Total number of samples: \t{len(demo_dataset)}')
 
-    model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=demo_dataset)
-    model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=True)
-    model.cuda()
-    model.eval()
-    with torch.no_grad():
-        for idx, data_dict in enumerate(demo_dataset):
-            logger.info(f'Visualized sample index: \t{idx + 1}')
-            data_dict = demo_dataset.collate_batch([data_dict])
-            load_data_to_gpu(data_dict)
-            pred_dicts, _ = model.forward(data_dict)
+    with open(args.pickle, "rb") as f:
+        all_preds = pickle.load(f)
+    
+    for idx, data_dict in enumerate(demo_dataset):
+        print(f'Visualized sample index: \t{idx + 1}')
+        data_dict = demo_dataset.collate_batch([data_dict])
+        pred_dicts = all_preds[idx]
 
-            V.draw_scenes(
-                points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
-                ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
-            )
+        V.draw_scenes(
+            points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
+            ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
+        )
 
-            if not OPEN3D_FLAG:
-                mlab.show(stop=True)
+        if not OPEN3D_FLAG:
+            mlab.show(stop=True)
 
-    logger.info('Demo done.')
+    print('Demo done.')
 
 
 if __name__ == '__main__':
