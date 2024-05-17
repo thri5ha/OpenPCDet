@@ -1,5 +1,6 @@
 import argparse
 import glob
+import pickle
 from pathlib import Path
 
 try:
@@ -68,7 +69,7 @@ def parse_config():
                         help='specify the point cloud data file or directory')
     parser.add_argument('--ckpt', type=str, default=None, help='specify the pretrained model')
     parser.add_argument('--ext', type=str, default='.bin', help='specify the extension of your point cloud data file')
-
+    parser.add_argument('--output_pickle', type=str, default=None, help='file path of output pickle')
     args = parser.parse_args()
 
     cfg_from_yaml_file(args.cfg_file, cfg)
@@ -90,6 +91,9 @@ def main():
     model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=True)
     model.cuda()
     model.eval()
+    
+    all_preds = []
+    
     with torch.no_grad():
         for idx, data_dict in enumerate(demo_dataset):
             logger.info(f'Visualized sample index: \t{idx + 1}')
@@ -97,13 +101,24 @@ def main():
             load_data_to_gpu(data_dict)
             pred_dicts, _ = model.forward(data_dict)
 
-            V.draw_scenes(
-                points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
-                ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
-            )
+            
+            for i, pred_dict in enumerate(pred_dicts):
+                for k,v in pred_dict.items():
+                    pred_dicts[i][k] = pred_dicts[i][k].cpu()
+            
+            all_preds.append(pred_dicts)
+            
+            # V.draw_scenes(
+            #     points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
+            #     ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
+            # )
 
-            if not OPEN3D_FLAG:
-                mlab.show(stop=True)
+            # if not OPEN3D_FLAG:
+            #     mlab.show(stop=True)
+
+    with open(args.output_pickle, "wb") as f:
+        pickle.dump(all_preds, f)
+        print(f"All predictions are saved to {args.output_pickle}")
 
     logger.info('Demo done.')
 
