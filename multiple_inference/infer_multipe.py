@@ -20,7 +20,7 @@ mydict = {
 pickle_files = "/media/ava/DATA3/DATA/thrisha/OpenPCDet/multiple_inference/pickle_files"
 if os.path.exists(pickle_files):
     shutil.rmtree(pickle_files)
-data_path = "/media/ava/DATA3/DATA/murali/nuscenes/v1.0-mini/gt_database_10sweeps_withvelo/truck/3_truck_16.bin"
+data_path = "/media/ava/DATA3/DATA/murali/nuscenes/v1.0-mini/sweeps/LIDAR_TOP/n008-2018-08-01-15-16-36-0400__LIDAR_TOP__1533151606998613.pcd.bin"
 
 for cfg_file_path, ckpt_path in mydict.items():
         
